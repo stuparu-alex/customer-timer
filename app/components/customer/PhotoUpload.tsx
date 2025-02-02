@@ -12,6 +12,7 @@ import { loadImage } from '@/app/utils/imageLoader';
 import PhotoFallback from './PhotoFallback';
 import { imageProcessor } from '@/app/utils/imageProcessor';
 import { errorReporter } from '@/app/utils/errorReporter';
+import { CustomerBase } from '@/app/types/customer';
 
 interface PhotoUploadProps {
   customerId: string;

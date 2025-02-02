@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Customer } from '@/app/types/customer';
+import { CustomerBase } from '@/app/types/customer';
 
 interface StatsProps {
   totalCustomers: number;

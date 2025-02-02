@@ -1,7 +1,20 @@
 import { Document } from 'mongoose';
 
-export interface Customer extends Document {
-  _id: string;  // MongoDB id
+export interface TimeOption {
+  label: string;
+  value: number;
+}
+
+export const TIME_OPTIONS: TimeOption[] = [
+  { label: '30 minutes', value: 30 },
+  { label: '1 hour', value: 60 },
+  { label: '2 hours', value: 120 },
+  { label: '3 hours', value: 180 },
+  { label: '4 hours', value: 240 }
+];
+
+export interface CustomerBase {
+  _id: string;
   name: string;
   status: 'waiting' | 'checked-in' | 'checked-out';
   checkInTime: string;
@@ -36,22 +49,11 @@ export interface CustomerRecord {
 }
 
 export interface VisitRecord {
-  checkInTime: string;
-  checkOutTime: string;
+  checkIn: string;
+  checkOut: string;
   duration: number;
   wasExtended: boolean;
   completedSession: boolean;
   timeEnded: boolean;
-}
-
-export interface TimeOption {
-  label: string;
-  value: number; // minutes
-}
-
-export const TIME_OPTIONS: TimeOption[] = [
-  { label: '30 minutes', value: 30 },
-  { label: '1 hour', value: 60 },
-  { label: '1.5 hours', value: 90 },
-  { label: '2 hours', value: 120 }
-]; 
+  extensionsUsed: number;
+} 

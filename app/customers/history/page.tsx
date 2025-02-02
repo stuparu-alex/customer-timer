@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { customerService } from '../../services/customerService';
-import { CustomerRecord, VisitRecord } from '../../types/customer';
+import { CustomerBase, CustomerRecord, VisitRecord } from '../../types/customer';
 import SearchBar from '../../components/customer/SearchBar';
 
 export default function CustomerHistoryPage() {
@@ -96,10 +96,10 @@ export default function CustomerHistoryPage() {
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="text-sm text-gray-900">
-                            Check-in: {visit.checkInTime}
+                            Check-in: {visit.checkIn}
                           </p>
                           <p className="text-sm text-gray-900">
-                            Check-out: {visit.checkOutTime}
+                            Check-out: {visit.checkOut}
                           </p>
                         </div>
                         <div className="flex gap-2">

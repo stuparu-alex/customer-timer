@@ -1,8 +1,8 @@
 'use client';
-import { Customer } from '@/app/types/customer';
+import { CustomerBase } from '@/app/types/customer';
 
 interface StatsDetailProps {
-  customers: Customer[];
+  customers: CustomerBase[];
   type: 'all' | 'checked-in' | 'checked-out';
   onClose: () => void;
 }

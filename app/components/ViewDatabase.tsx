@@ -1,10 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { Customer } from '../types/customer';
+import { CustomerBase } from '../types/customer';
 
 export default function ViewDatabase() {
   const [isOpen, setIsOpen] = useState(false);
-  const [data, setData] = useState<Customer[]>([]);
+  const [data, setData] = useState<CustomerBase[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 

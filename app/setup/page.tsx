@@ -1,7 +1,17 @@
 'use client';
 import { useState } from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import dynamic from 'next/dynamic';
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+
+// Dynamically import SyntaxHighlighter with proper type handling
+const DynamicSyntaxHighlighter = dynamic(
+  () => import('react-syntax-highlighter').then(mod => mod.Prism),
+  { 
+    ssr: false,
+    loading: () => <pre>Loading...</pre>
+  }
+);
 
 export default function SetupPage() {
   const [activeTab, setActiveTab] = useState<'manual' | 'script'>('manual');
@@ -107,7 +117,7 @@ NEXT_PUBLIC_VERSION="1.0.0"`
   ];
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           Installation Guide
@@ -178,31 +188,14 @@ NEXT_PUBLIC_VERSION="1.0.0"`
           ))}
         </div>
       ) : (
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Automated Setup Script
-            </h2>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(setupScript);
-                alert('Script copied to clipboard!');
-              }}
-              className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Copy Script
-            </button>
-          </div>
-          <SyntaxHighlighter
+        <div className="bg-gray-900 rounded-lg p-4">
+          <DynamicSyntaxHighlighter
             language="bash"
             style={tomorrow}
-            className="rounded-md"
+            className="rounded-lg"
           >
             {setupScript}
-          </SyntaxHighlighter>
-          <p className="mt-4 text-sm text-gray-500">
-            Save this script as setup.sh and run it using: bash setup.sh
-          </p>
+          </DynamicSyntaxHighlighter>
         </div>
       )}
     </div>

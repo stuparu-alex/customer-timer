@@ -5,11 +5,18 @@ interface ErrorDetails {
   context?: Record<string, any>;
 }
 
+interface ErrorContext {
+  customerId?: string;
+  operation?: string;
+  timestamp?: number;
+  [key: string]: any;
+}
+
 class ErrorReporter {
   private errors: ErrorDetails[] = [];
   private maxErrors = 100;
 
-  report(error: Error, context?: Record<string, any>) {
+  report(error: Error, context?: ErrorContext) {
     const errorDetails: ErrorDetails = {
       code: this.getErrorCode(error),
       message: error.message,

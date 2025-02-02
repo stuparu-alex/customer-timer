@@ -1,5 +1,5 @@
 'use client';
-import { Customer } from '@/app/types/customer';
+import { CustomerBase } from '@/app/types/customer';
 import TimeInterval from './TimeInterval';
 import CustomerActions from './CustomerActions';
 import { useEffect, useState } from 'react';
@@ -7,10 +7,10 @@ import Image from 'next/image';
 import PhotoUploadWrapper from './PhotoUploadWrapper';
 
 interface CustomerListProps {
-  customers: Customer[];
+  customers: CustomerBase[];
   onCheckOut: (id: string) => void;
   onExtendTime: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<Customer>) => void;
+  onUpdate: (id: string, updates: Partial<CustomerBase>) => void;
   onDelete: (id: string) => void;
 }
 
@@ -21,10 +21,10 @@ export default function CustomerList({
   onUpdate,
   onDelete 
 }: CustomerListProps) {
-  const [sortedCustomers, setSortedCustomers] = useState<Customer[]>([]);
+  const [sortedCustomers, setSortedCustomers] = useState<CustomerBase[]>([]);
 
   // Sort customers function
-  const sortCustomers = (customerList: Customer[]) => {
+  const sortCustomers = (customerList: CustomerBase[]): CustomerBase[] => {
     return [...customerList].sort((a, b) => {
       // First sort by status
       if (a.status !== b.status) {
@@ -58,11 +58,12 @@ export default function CustomerList({
         const updatedCustomers = prevCustomers.map(customer => {
           if (customer.status === 'checked-in' && customer.interval.endTime <= now) {
             needsUpdate = true;
-            onCheckOut(customer._id); // Trigger checkout
-            return {
+            onCheckOut(customer._id);
+            const updatedCustomer: CustomerBase = {
               ...customer,
               status: 'checked-out'
             };
+            return updatedCustomer;
           }
           return customer;
         });
@@ -72,12 +73,12 @@ export default function CustomerList({
         }
         return prevCustomers;
       });
-    }, 1000); // Check every second
+    }, 1000);
 
     return () => clearInterval(timer);
   }, [onCheckOut]);
 
-  const getCardStyle = (customer: Customer) => {
+  const getCardStyle = (customer: CustomerBase) => {
     if (customer.status === 'checked-out') {
       return 'border-gray-200 bg-gray-100 opacity-75';
     }
@@ -129,7 +130,7 @@ export default function CustomerList({
                     onFinish={() => onCheckOut(customer._id)}
                     isNearingEnd={customer.interval.isNearingEnd}
                     hasExtended={customer.interval.hasExtended}
-                    extensionCount={customer.interval.extensionCount || 0}
+                    extensionCount={customer.interval.extensionCount}
                     lastExtensionTime={customer.interval.lastExtensionTime}
                   />
                 </div>

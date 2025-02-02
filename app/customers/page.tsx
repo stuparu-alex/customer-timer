@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from "react";
-import { Customer } from "../types/customer";
+import { CustomerBase } from "../types/customer";
 import { customerService } from '../services/customerService';
 import CustomerForm from "../components/customer/CustomerForm";
 import CustomerList from "../components/customer/CustomerList";
@@ -19,7 +19,7 @@ const MAX_EXTENSIONS = 3;
 const EXTENSION_COOLDOWN = 60 * 60 * 1000; // 1 hour in milliseconds
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerBase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,7 +60,7 @@ export default function CustomersPage() {
           // Handle expired sessions
           if (timeLeft <= 0 && !customer.interval.isNearingEnd) {
             customerService.updateCustomerRecord(customer, true);
-            return {
+            const updatedCustomer: CustomerBase = {
               ...customer,
               status: 'checked-out',
               interval: {
@@ -68,6 +68,7 @@ export default function CustomersPage() {
                 isNearingEnd: false
               }
             };
+            return updatedCustomer;
           }
           
           return {
@@ -76,7 +77,7 @@ export default function CustomersPage() {
               ...customer.interval,
               isNearingEnd
             }
-          };
+          } as CustomerBase;
         });
 
         // Sort by remaining time
@@ -88,7 +89,7 @@ export default function CustomersPage() {
   }, []);
 
   // Helper function to calculate remaining time
-  const getRemainingTime = (customer: Customer): number => {
+  const getRemainingTime = (customer: CustomerBase): number => {
     if (customer.status !== 'checked-in') return Infinity;
     return customer.interval.endTime - Date.now();
   };
@@ -236,16 +237,18 @@ export default function CustomersPage() {
     customerService.exportToCSV(customers);
   };
 
-  const handleUpdateCustomer = async (customerId: string, updates: Partial<Customer>) => {
+  const handleUpdateCustomer = async (customerId: string, updates: Partial<CustomerBase>) => {
     try {
       const customer = customers.find(c => c._id === customerId);
       if (!customer) return;
 
       // If interval is being updated, set status to checked-in
       const shouldCheckIn = updates.interval && customer.status === 'checked-out';
-      const updatedData = {
+      
+      // Ensure status is properly typed
+      const updatedData: Partial<CustomerBase> = {
         ...updates,
-        ...(shouldCheckIn && { status: 'checked-in' })
+        ...(shouldCheckIn && { status: 'checked-in' as const })
       };
 
       // Update in database first

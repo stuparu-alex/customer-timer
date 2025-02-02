@@ -1,11 +1,11 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { Customer } from '@/app/types/customer';
+import { CustomerBase } from '@/app/types/customer';
 import { TIME_OPTIONS } from '@/app/types/customer';
 
 interface CustomerActionsProps {
-  customer: Customer;
-  onUpdate: (id: string, updates: Partial<Customer>) => void;
+  customer: CustomerBase;
+  onUpdate: (id: string, updates: Partial<CustomerBase>) => void;
   onDelete: (id: string) => void;
 }
 

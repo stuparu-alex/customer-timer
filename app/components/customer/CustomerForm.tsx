@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { TimeOption, TIME_OPTIONS } from '@/app/types/customer';
+import { TimeOption, TIME_OPTIONS, CustomerBase } from '@/app/types/customer';
 
 interface CustomerFormProps {
   onSubmit: (name: string, duration: number) => void;

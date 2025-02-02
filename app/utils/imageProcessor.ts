@@ -4,6 +4,7 @@ interface ProcessingOptions {
   quality?: number;
   progressive?: boolean;
   format?: 'jpeg' | 'png' | 'webp';
+  compressionLevel?: number;
 }
 
 class ImageProcessor {
@@ -39,7 +40,8 @@ class ImageProcessor {
       maxHeight = 1080,
       quality = 0.8,
       progressive = true,
-      format = 'jpeg'
+      format = 'jpeg',
+      compressionLevel = 9
     } = options;
 
     // Generate low-quality preview first

@@ -1,4 +1,7 @@
-import mongoose, { Schema } from 'mongoose';
+import { CustomerBase } from '../types/customer';
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface CustomerDocument extends Omit<CustomerBase, '_id'>, Document {}
 
 const customerSchema = new Schema({
   name: { 
@@ -40,4 +43,5 @@ const customerSchema = new Schema({
   timestamps: true
 });
 
-export const Customer = mongoose.models.Customer || mongoose.model('Customer', customerSchema); 
+export const Customer = mongoose.models.Customer || 
+  mongoose.model<CustomerDocument>('Customer', customerSchema); 

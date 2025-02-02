@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { TIME_OPTIONS } from '@/app/types/customer';
+import { TIME_OPTIONS, CustomerBase } from '@/app/types/customer';
 
 interface TimeIntervalProps {
   startTime: number;
@@ -10,6 +10,8 @@ interface TimeIntervalProps {
   onFinish: () => void;
   isNearingEnd: boolean;
   hasExtended: boolean;
+  extensionCount: number;
+  lastExtensionTime: number | null;
 }
 
 export default function TimeInterval({ 
@@ -19,7 +21,9 @@ export default function TimeInterval({
   onExtend, 
   onFinish,
   isNearingEnd,
-  hasExtended 
+  hasExtended,
+  extensionCount = 0,
+  lastExtensionTime
 }: TimeIntervalProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [progress, setProgress] = useState(100);

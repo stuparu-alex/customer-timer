@@ -1,54 +1,79 @@
-import { Customer, CustomerRecord, VisitRecord } from '../types/customer';
+import { CustomerBase, CustomerRecord, VisitRecord } from '../types/customer';
 
 class CustomerService {
   private readonly STORAGE_KEY = 'customer_data';
   private readonly AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+  private currentCustomers: CustomerBase[] = [];
 
   // Initialize with auto-save
   constructor() {
     if (typeof window !== 'undefined') {
-      setInterval(() => this.saveToStorage(), this.AUTO_SAVE_INTERVAL);
+      // Load initial customers
+      this.loadCustomers().then(customers => {
+        this.currentCustomers = customers;
+      });
+
+      // Set up auto-save interval
+      setInterval(() => {
+        this.saveToStorage(this.currentCustomers);
+      }, this.AUTO_SAVE_INTERVAL);
     }
   }
 
-  // Load customers from storage
-  loadCustomers(): Customer[] {
+  // Load customers from API or storage
+  async loadCustomers(): Promise<CustomerBase[]> {
     if (typeof window === 'undefined') return [];
     
     try {
-      const saved = localStorage.getItem(this.STORAGE_KEY);
-      if (!saved) return [];
-
-      const customers = JSON.parse(saved) as Customer[];
+      // Try to fetch from API first
+      const response = await fetch('/api/customers');
+      if (!response.ok) {
+        throw new Error('Failed to fetch customers');
+      }
+      const data = await response.json();
+      return data as CustomerBase[];
+    } catch (apiError) {
+      console.error('API fetch failed, falling back to local storage:', apiError);
       
-      // Rehydrate date objects and clean up expired sessions
-      return customers.map(customer => ({
-        ...customer,
-        interval: {
-          ...customer.interval,
-          startTime: Number(customer.interval.startTime),
-          endTime: Number(customer.interval.endTime)
-        }
-      })).filter(this.filterExpiredSessions);
-    } catch (error) {
-      console.error('Error loading customers:', error);
-      return [];
+      // Fall back to local storage if API fails
+      try {
+        const saved = localStorage.getItem(this.STORAGE_KEY);
+        if (!saved) return [];
+
+        const customers = JSON.parse(saved) as CustomerBase[];
+        
+        // Rehydrate date objects and clean up expired sessions
+        return customers
+          .map(customer => ({
+            ...customer,
+            interval: {
+              ...customer.interval,
+              startTime: Number(customer.interval.startTime),
+              endTime: Number(customer.interval.endTime)
+            }
+          }))
+          .filter(this.filterExpiredSessions);
+      } catch (storageError) {
+        console.error('Error loading from storage:', storageError);
+        return [];
+      }
     }
   }
 
   // Save customers to storage
-  saveToStorage(customers: Customer[] = []): void {
+  saveToStorage(customers: CustomerBase[]): void {
     if (typeof window === 'undefined') return;
     
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(customers));
+      this.currentCustomers = customers; // Update current customers
     } catch (error) {
       console.error('Error saving customers:', error);
     }
   }
 
   // Filter out sessions older than 24 hours
-  private filterExpiredSessions(customer: Customer): boolean {
+  private filterExpiredSessions(customer: CustomerBase): boolean {
     const ONE_DAY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     const now = Date.now();
     
@@ -58,7 +83,7 @@ class CustomerService {
   }
 
   // Export customer data to CSV
-  exportToCSV(customers: Customer[]): void {
+  exportToCSV(customers: CustomerBase[]): void {
     const headers = ['Name', 'Check-in Time', 'Status', 'Duration', 'End Time'];
     const rows = customers.map(customer => [
       customer.name,
@@ -107,19 +132,20 @@ class CustomerService {
     }
   }
 
-  updateCustomerRecord(customer: Customer, timeEnded: boolean = false) {
+  updateCustomerRecord(customer: CustomerBase, timeEnded: boolean = false) {
     const records = this.loadCustomerRecords();
     const now = new Date();
     const visitRecord: VisitRecord = {
-      checkInTime: customer.checkInTime,
-      checkOutTime: now.toLocaleTimeString(),
+      checkIn: customer.checkInTime,
+      checkOut: now.toLocaleTimeString(),
       duration: customer.interval.duration,
       wasExtended: customer.interval.hasExtended,
       completedSession: !timeEnded,
-      timeEnded
+      timeEnded,
+      extensionsUsed: customer.interval.extensionCount || 0
     };
 
-    const existingRecord = records.find(r => r.id === customer.id);
+    const existingRecord = records.find(r => r.id === customer._id);
     
     if (existingRecord) {
       existingRecord.totalVisits += 1;
@@ -128,7 +154,7 @@ class CustomerService {
       existingRecord.status = 'active';
     } else {
       records.push({
-        id: customer.id,
+        id: customer._id,
         name: customer.name,
         totalVisits: 1,
         lastVisit: now.toLocaleString(),
@@ -149,36 +175,28 @@ class CustomerService {
     }
   }
 
-  exportData(): string {
+  async exportData(): Promise<Blob> {
     try {
+      const customers = await this.loadCustomers();
+      const records = this.loadCustomerRecords();
+      
       const data = {
-        customers: this.loadCustomers(),
-        records: this.loadCustomerRecords(),
-        exportDate: new Date().toISOString(),
         version: '1.0',
+        exportDate: new Date().toISOString(),
         metadata: {
-          totalCustomers: this.loadCustomers().length,
-          totalRecords: this.loadCustomerRecords().length,
-          activeCustomers: this.loadCustomers().filter(c => c.status === 'checked-in').length
-        }
+          totalCustomers: customers.length,
+          totalRecords: records.length,
+          activeCustomers: customers.filter(c => c.status === 'checked-in').length
+        },
+        customers,
+        records
       };
-      
-      const jsonString = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      const fileName = `customer_data_backup_${new Date().toISOString().split('T')[0]}.json`;
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', fileName);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      return 'Export successful';
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json'
+      });
+
+      return blob;
     } catch (error) {
       console.error('Export failed:', error);
       throw new Error('Failed to export data');
@@ -204,7 +222,7 @@ class CustomerService {
       }
 
       // Validate customer data structure
-      const isValidCustomer = (customer: any): customer is Customer => {
+      const isValidCustomer = (customer: any): customer is CustomerBase => {
         return customer._id && 
                customer.name && 
                customer.checkInTime && 
@@ -237,15 +255,7 @@ class CustomerService {
     }
   }
 
-  async loadCustomers() {
-    const response = await fetch('/api/customers');
-    if (!response.ok) {
-      throw new Error('Failed to fetch customers');
-    }
-    return response.json();
-  }
-
-  async addCustomer(name: string, duration: number) {
+  async addCustomer(name: string, duration: number): Promise<CustomerBase> {
     const response = await fetch('/api/customers', {
       method: 'POST',
       headers: {
@@ -269,7 +279,7 @@ class CustomerService {
     return response.json();
   }
 
-  async updateCustomer(id: string, data: Partial<Customer>) {
+  async updateCustomer(id: string, data: Partial<CustomerBase>): Promise<CustomerBase> {
     const response = await fetch(`/api/customers/${id}`, {
       method: 'PUT',
       headers: {
@@ -291,6 +301,12 @@ class CustomerService {
       throw new Error('Failed to delete customer');
     }
     return response.json();
+  }
+
+  // Update current customers
+  private updateCurrentCustomers(customers: CustomerBase[]): void {
+    this.currentCustomers = customers;
+    this.saveToStorage(customers);
   }
 }
 
